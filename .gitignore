@@ -1,1 +1,56 @@
+# Editor
 .vscode/
+.idea/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Environment variables
+.env
+
+# Data (raw & processed are tracked via .gitkeep; actual files are ignored)
+data/raw/*.csv
+data/raw/*.json
+data/raw/*.zip
+data/processed/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+
+# macOS metadata
+__MACOSX/
+.DS_Store
+
+# Model checkpoints & outputs
+outputs/
+models/
+*.pt
+*.bin
+*.ckpt
+!outputs/.gitkeep
+
+# Logs
+*.log
+logs/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# Coverage
+.coverage
+htmlcov/
+.pytest_cache/

@@ -1,178 +1,161 @@
-# 🧠 ABSA-BERT — README.md
+# ABSA-BERT
 
-## 📘 Overview
+ABSA-BERT is an Aspect-Based Sentiment Analysis project built with BERT and PyTorch. It includes two tasks:
+- `ATE` (Aspect Term Extraction): extract aspect tokens in a sentence.
+- `ATSC` (Aspect Term Sentiment Classification): predict sentiment for a target aspect.
 
-This project implements **Aspect-Based Sentiment Analysis (ABSA)** using **BERT** in PyTorch. It includes two tasks:
+## 1. Requirements
 
-* **ATE (Aspect Term Extraction):** Identify aspect terms in sentences.
-* **ATSC (Aspect Term Sentiment Classification):** Determine the sentiment polarity of the extracted aspects.
+- Python `>=3.10`
+- `uv` is recommended for environment and dependency management
 
-The pipeline includes dataset building, tokenization, model training, and prediction modules.
+## 2. Installation
 
----
-
-## ⚙️ Installation
-
-### 1️⃣ Clone and setup environment
+From the project root (`ABSA-BERT`):
 
 ```bash
-git clone https://github.com/<your-repo>/ML_nlp.git
-cd ML_nlp
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
+uv sync
 ```
 
-### 2️⃣ (Optional) Using Conda
+If you want editable install plus development dependencies:
 
 ```bash
-conda create -n mlnlp python=3.10 -y
-conda activate mlnlp
-pip install -r requirements.txt
+uv sync --extra dev
 ```
 
----
+## 3. Data
 
-## ⬇️ Download dataset
+Default dataset paths:
+- `./data/raw/restaurants_train.csv`
+- `./data/raw/restaurants_test.csv`
 
-### 1️⃣ Ensure gdown is installed
-
-If you see error `gdown: command not found`, install it:
-
-```bash
-pip install gdown
-```
-
-### 2️⃣ Run the script to download data
-
-From the **project root (`ML_nlp/`)**:
+Download data with:
 
 ```bash
 bash scripts/download_data.sh
 ```
 
-This will:
+Note: training and prediction expect CSV files with 3 list-string columns:
+- `Tokens`
+- `Tags`
+- `Polarities`
 
-* Download a Google Drive file (ID inside the script)
-* Save it as `data.zip`
-* You can then extract it:
+## 4. Train
 
-```bash
-unzip data.zip -d data
-```
-
-### 3️⃣ Verify data structure
-
-Ensure you have:
-
-```
-./data/restaurants_train.csv
-./data/restaurants_test.csv
-```
-
-> ⚠️ Note: If your files are in `data/data/...`, move them up one level to `data/`.
-
----
-
-## 🚀 Training
-
-### 1️⃣ Set up PYTHONPATH
-
-Run once per terminal session:
+### Train ATE
 
 ```bash
-export PYTHONPATH="$PWD/src:$PYTHONPATH"
+uv run python -m absa.train.ate \
+  --train_csv ./data/raw/restaurants_train.csv \
+  --valid_csv ./data/raw/restaurants_test.csv \
+  --save_dir ./outputs/ate
 ```
 
-### 2️⃣ Train ATE (Aspect Term Extraction)
+### Train ATSC
 
 ```bash
-python -m absa.train_ate \
-  --model_name bert-base-uncased \
-  --train_csv data/restaurants_train.csv \
-  --valid_csv data/restaurants_test.csv \
-  --epochs 5 --batch_size 32 --lr 1e-5 \
-  --save_dir models/ate
+uv run python -m absa.train.atsc \
+  --train_csv ./data/raw/restaurants_train.csv \
+  --valid_csv ./data/raw/restaurants_test.csv \
+  --save_dir ./outputs/atsc
 ```
 
-### 3️⃣ Train ATSC (Aspect Term Sentiment Classification)
+The best checkpoint is saved as `best.pt` inside `save_dir`.
+
+## 5. Inference
+
+### Predict ATE
 
 ```bash
-python -m absa.train_atsc \
-  --model_name bert-base-uncased \
-  --train_csv data/restaurants_train.csv \
-  --valid_csv data/restaurants_test.csv \
-  --epochs 5 --batch_size 32 --lr 1e-5 \
-  --save_dir models/atsc
+uv run python -m absa.predict.ate \
+  --ckpt ./outputs/ate/best.pt \
+  --sentence "The food was great but the service was slow."
 ```
 
-Both scripts automatically save the **best checkpoint** by validation loss.
-
----
-
-## 🔮 Prediction
-
-### 1️⃣ Predict Aspect Terms (ATE)
+### Predict ATSC
 
 ```bash
-python -m absa.predict_ate --ckpt models/ate/best.pt \
-  --model_name bert-base-uncased \
-  --sentence "the bread is top notch as well"
+uv run python -m absa.predict.atsc \
+  --ckpt ./outputs/atsc/best.pt \
+  --sentence "The food was great but the service was slow." \
+  --aspect "food"
 ```
 
-**Output:**
+## 6. Data Analysis (EDA)
 
-```json
-{"tokens": ["the", "bread", "is", "top", "notch", "as", "well"], "preds": [0, 1, 0, 0, 0, 0, 0]}
-```
-
-### 2️⃣ Predict Sentiment (ATSC)
+Built-in data analysis command:
 
 ```bash
-python -m absa.predict_atsc --ckpt models/atsc/best.pt \
-  --model_name bert-base-uncased \
-  --sentence "The bread is top notch as well" \
-  --aspect "bread"
+uv run absa-analyze-data
 ```
 
-**Output:**
+Statistics are printed to the console and saved to:
+- `./outputs/data_analysis.json`
 
-```json
-{"sentence": "The bread is top notch as well", "aspect": "bread", "pred": 2}
+You can pass custom paths:
+
+```bash
+uv run absa-analyze-data \
+  --train_csv ./data/raw/restaurants_train.csv \
+  --valid_csv ./data/raw/restaurants_test.csv \
+  --out_json ./outputs/my_analysis.json
 ```
 
----
+## 7. Test and Lint
 
-## 🧩 Expected Results
+Run tests:
 
-| Task | Accuracy |
-| ---- | -------- |
-| ATE  | ~92.1%   |
-| ATSC | ~81.4%   |
-
----
-
-## 📂 Folder structure
-
+```bash
+uv run pytest
 ```
+
+Lint:
+
+```bash
+uv run ruff check src tests
+```
+
+Format code:
+
+```bash
+uv run ruff format src tests
+```
+
+## 8. Docker
+
+Build image:
+
+```bash
+docker build -t absa-bert:latest .
+```
+
+Run ATE training in Docker (if your machine has GPU support):
+
+```bash
+docker run --rm --gpus all \
+  -v $(pwd)/data:/app/data \
+  -v $(pwd)/outputs:/app/outputs \
+  absa-bert:latest make train-ate
+```
+
+## 9. Main Project Structure
+
+```text
 ABSA-BERT/
-├── data/                      # datasets
-├── models/                    # trained checkpoints
-├── scripts/
-│   └── download_data.sh        # dataset downloader
-├── src/absa/                   # source code
-│   ├── data.py
-│   ├── models.py
-│   ├── train_ate.py
-│   ├── train_atsc.py
-│   ├── predict_ate.py
-│   └── predict_atsc.py
-└── requirements.txt
-
+|- configs/
+|- data/
+|  |- raw/
+|  |- processed/
+|- outputs/
+|- scripts/
+|- src/absa/
+|  |- analyze.py
+|  |- config.py
+|  |- data.py
+|  |- models.py
+|  |- predict/
+|  |- train/
+|- tests/
+|- pyproject.toml
+|- Makefile
 ```
-
----
-
-## 📜 License
-
-MIT © 2025 — Trịnh Văn Giang

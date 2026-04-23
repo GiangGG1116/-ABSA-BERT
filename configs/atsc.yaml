@@ -1,0 +1,12 @@
+model_name: bert-base-uncased
+train_csv: ./data/raw/restaurants_train.csv
+valid_csv: ./data/raw/restaurants_test.csv
+save_dir:  ./outputs/atsc
+
+batch_size:   32
+epochs:        5
+lr:          1.0e-5
+weight_decay: 0.01
+grad_clip:    1.0
+max_length:  128
+seed:         42
